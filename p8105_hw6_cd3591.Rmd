@@ -5,3 +5,12 @@ date: "2025-11-28"
 output: github_document
 ---
 
+```{r}
+# set up libraries
+library(tidyverse)
+```
+
+# Problem 1
+```{r}
+
+```
