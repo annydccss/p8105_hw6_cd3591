@@ -12,5 +12,27 @@ library(tidyverse)
 
 # Problem 1
 ```{r}
+# import the dataset
+homicides_raw = read_csv("homicide-data.csv") %>% 
+  janitor::clean_names()
+
+# tidy the dataset
+homicides = homicides_raw %>%
+  mutate(
+    city_state = str_c(city, ", ", state),  # e.g. “Baltimore, MD”
+    resolved = ifelse(disposition == "Closed by arrest", 1, 0),  # 1 means homicide is solved, 0 means it is not (binary)
+    victim_age = as.numeric(victim_age)  # Be sure that victim_age is numeric
+  ) %>%
+  filter(
+    !city_state %in% c("Dallas, TX", "Phoenix, AZ", "Kansas City, MO", "Tulsa, AL"),  
+    # Omit cities Dallas, TX; Phoenix, AZ; and Kansas City, MO, Tulsa, AL
+    victim_race %in% c("White", "Black"),  # limit your analysis those for whom victim_race is white or black
+    !is.na(victim_age)
+  ) %>%
+  mutate(
+    victim_sex = relevel(factor(victim_sex), ref = "Female"),  # make the reference level is female in victim_sex
+    victim_race = relevel(factor(victim_race), ref = "White")  # make the reference level is white in victim_race
+  )
+
 
 ```
