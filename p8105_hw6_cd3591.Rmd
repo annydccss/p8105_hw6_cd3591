@@ -33,6 +33,20 @@ homicides = homicides_raw %>%
     victim_sex = relevel(factor(victim_sex), ref = "Female"),  # make the reference level is female in victim_sex
     victim_race = relevel(factor(victim_race), ref = "White")  # make the reference level is white in victim_race
   )
-
-
 ```
+
+```{r}
+# Baltimore only: OR + CI for male vs female
+baltimore_fit = homicides %>%
+  filter(city_state == "Baltimore, MD") %>%
+  glm(resolved ~ victim_age + victim_sex + victim_race, data = ., family = binomial())
+
+baltimore_or =
+  broom::tidy(baltimore_fit, exponentiate = TRUE, conf.int = TRUE) %>%
+  filter(term == "victim_sexMale") %>%
+  select(estimate, conf.low, conf.high)
+
+baltimore_or
+```
+
+The estimate of the ajusted OR is `r baltimore_or[1]`, with the confidence interval of (`r baltimore_or[2]`, `r baltimore_or[3]`).
