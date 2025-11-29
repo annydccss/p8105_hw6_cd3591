@@ -50,3 +50,55 @@ baltimore_or
 ```
 
 The estimate of the ajusted OR is `r baltimore_or[1]`, with the confidence interval of (`r baltimore_or[2]`, `r baltimore_or[3]`).
+
+```{r}
+# run each city
+city_or = homicides %>%
+  group_by(city_state) %>%
+  nest() %>%
+  mutate(
+    fit = purrr::map(
+      data,
+      possibly(
+        ~ suppressWarnings(glm(resolved ~ victim_age + victim_sex + victim_race,
+              data = .x, family = binomial())),
+        otherwise = NULL
+      )
+    ),
+    tidied = purrr::map(
+      fit,
+      ~ if (is.null(.x)) NULL else suppressWarnings(broom::tidy(.x, exponentiate = TRUE, conf.int = TRUE))
+    )
+  ) %>%
+  select(city_state, tidied) %>%
+  filter(!map_lgl(tidied, is.null)) %>%      # drop cities where glm failed
+  unnest(tidied) %>%
+  filter(term == "victim_sexMale") %>%
+  transmute(
+    city_state,
+    or = estimate,
+    ci_low = conf.low,
+    ci_high = conf.high
+  ) %>%
+  mutate(city_state = fct_reorder(city_state, or))
+
+city_or
+```
+
+```{r}
+# plot the graph of the estimated ORs and CIs for each city
+ggplot(city_or, aes(x = city_state, y = or)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_high), width = 0) +
+  geom_hline(yintercept = 1, linetype = 2) +
+  coord_flip() +
+  theme_minimal() +
+  labs(x = "City", y = "Adjusted OR (Male vs Female)")
+```
+
+Across most cities, the adjusted odds ratio (male vs. female) is below 1. This suggests that, after adjusting for victim age and race, homicides with male victims generally have lower odds of being solved than homicides with female victims.
+
+A smaller number of cities have point estimates near 1 (or slightly above 1), indicating little difference by victim sex or a possible reversal in direction. However, many of these estimates have confidence intervals that cross 1, so the evidence for a clear sex difference in those cities is weak or inconclusive.
+
+Finally, a few cities show very wide confidence intervals and/or unusually large odds ratios (e.g., the extreme value near the bottom of the plot). These patterns usually reflect limited data within that city complete separation in the logistic regression, which makes estimates unstable. As a result, those extreme city-specific estimates should be interpreted cautiously compared with the more precise estimates.
+
