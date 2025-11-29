@@ -102,3 +102,9 @@ A smaller number of cities have point estimates near 1 (or slightly above 1), in
 
 Finally, a few cities show very wide confidence intervals and/or unusually large odds ratios (e.g., the extreme value near the bottom of the plot). These patterns usually reflect limited data within that city complete separation in the logistic regression, which makes estimates unstable. As a result, those extreme city-specific estimates should be interpreted cautiously compared with the more precise estimates.
 
+# Problem 2
+```{r}
+# get the weather_df
+library(p8105.datasets)
+data("weather_df")
+```
