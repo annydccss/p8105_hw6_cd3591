@@ -217,4 +217,10 @@ The residuals vs fitted plot shows a dense cloud of points centered around the h
 However, the spread of residuals is not perfectly constant across the fitted values. There are several notable outliers, including some very large positive residuals at lower fitted values (meaning the model strongly under-predicts birthweight for a few cases), and some large negative residuals at higher fitted values (meaning the model over-predicts for a few cases). This indicates mild heteroscedasticity and the presence of influential or unusual observations.
 
 ```{r}
+# model 1: length + gestational age (main effects only)
+fit_m1 = lm(bwt ~ blength + gaweeks, data = birthweight)
+
+# model 2: head circumference, length, sex, and ALL interactions (incl. 3-way)
+fit_m2 = lm(bwt ~ bhead + blength + babysex + 
+              bhead * blength * babysex, data = birthweight)
 ```
