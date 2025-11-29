@@ -108,3 +108,61 @@ Finally, a few cities show very wide confidence intervals and/or unusually large
 library(p8105.datasets)
 data("weather_df")
 ```
+
+```{r}
+set.seed(1122)
+
+# write the function for bootstrap
+bootstrap = function(df) {
+  boot_df = df %>% slice_sample(n = nrow(df), replace = TRUE)
+
+  fit = lm(tmax ~ tmin + prcp, data = boot_df)
+
+  r2 = broom::glance(fit)$r.squared
+
+  coefs = broom::tidy(fit)
+  b1 = coefs %>% filter(term == "tmin") %>% pull(estimate)
+  b2 = coefs %>% filter(term == "prcp") %>% pull(estimate)
+
+  tibble(r2 = r2, beta1_over_beta2 = b1 / b2)
+}
+
+# 5000 bootstrap replicates
+boot_results = map_dfr(1:5000, ~ bootstrap(weather_df))
+```
+
+```{r}
+# r^2 distribution
+ggplot(boot_results, aes(x = r2)) +
+  geom_histogram(bins = 40) +
+  theme_minimal() +
+  labs(title = "Bootstrap distribution of R-squared", x = "R-squared", y = "Count")
+```
+
+The bootstrap distribution of R_squared is unimodal, roughly bell-shaped and fairly narrow, centered around about 0.94. This indicates the model fit is very stable across bootstrap resamples: in almost every resample, the regression of tmax on tmin and prcp explains a very similar proportion of the variability in tmax (roughly 93%–95%).
+
+```{r}
+# beta1/beta2 distribution (can be extreme if beta2 is near 0)
+ggplot(boot_results, aes(x = beta1_over_beta2)) +
+  geom_histogram(bins = 60) +
+  theme_minimal() +
+  labs(title = "Bootstrap distribution of beta1/beta2", x = "beta1 / beta2", y = "Count")
+```
+
+The bootstrap distribution of b1/b2 is unimodal, much wider and clearly left-skewed. Most values cluster around a large negative number (roughly in the −200 range), but there is a long left tail extending to much more negative values (e.g., below −300 and even farther). This happens because the ratio becomes extremely negative in bootstrap samples where the estimated precipitation coefficient b2 is close to zero, which makes b1/b2 very sensitive to small changes in b2.
+
+```{r}
+# 95% bootstrap confidence intervals (2.5% and 97.5%)
+ci_table =
+  boot_results %>%
+  summarise(
+    r2_ci_low = quantile(r2, 0.025, na.rm = TRUE),
+    r2_ci_high = quantile(r2, 0.975, na.rm = TRUE),
+    ratio_ci_low = quantile(beta1_over_beta2, 0.025, na.rm = TRUE),
+    ratio_ci_high = quantile(beta1_over_beta2, 0.975, na.rm = TRUE))
+
+ci_table
+```
+
+For R_squared, the confidence interval is (`r ci_table[1]`, `r ci_table[2]`). For b1/b2, the confidence interval is (`r ci_table[3]`, `r ci_table[4]`).
+
