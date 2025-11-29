@@ -224,3 +224,49 @@ fit_m1 = lm(bwt ~ blength + gaweeks, data = birthweight)
 fit_m2 = lm(bwt ~ bhead + blength + babysex + 
               bhead * blength * babysex, data = birthweight)
 ```
+
+```{r}
+# cross validation
+set.seed(1122)
+
+cv_df = modelr::crossv_mc(birthweight, n = 100, test = 0.2)  # 80/20 splits
+
+# write the function for cross validation
+rmse_one_split = function(train, test, formula) {
+  fit =lm(formula, data = train)
+  test %>%
+    modelr::add_predictions(fit) %>%
+    summarise(rmse = sqrt(mean((bwt - pred)^2))) %>%
+    pull(rmse)
+}
+
+cv_results = cv_df %>%
+  mutate(
+    train = purrr::map(train, as_tibble),
+    test  = purrr::map(test,  as_tibble),
+
+    rmse_fit = purrr::map2_dbl(train, test, ~ rmse_one_split(.x, .y,
+      bwt ~ blength + bhead + gaweeks + babysex + smoken + delwt + wtgain + mheight
+    )),
+
+    rmse_m1 = purrr::map2_dbl(train, test, ~ rmse_one_split(.x, .y,
+      bwt ~ blength + gaweeks
+    )),
+
+    rmse_m2 = purrr::map2_dbl(train, test, ~ rmse_one_split(.x, .y,
+      bwt ~ bhead * blength * babysex
+    ))
+  )
+
+# compare average CV RMSE (lower = better prediction)
+cv_summary = cv_results %>%
+  summarise(
+    fit_mean_rmse = mean(rmse_fit),
+    m1_mean_rmse  = mean(rmse_m1),
+    m2_mean_rmse  = mean(rmse_m2)
+  )
+
+cv_summary
+```
+
+Across repeated 80/20 cross-validation splits, the proposed model had the smallest mean RMSE (280.48), which indicates the best out-of-sample predictive performance among the three models. Model 2, which includes head circumference, length, sex, and all interactions, had a slightly larger mean RMSE (288.48). Model 1, using only birth length and gestational age, performed worst with the largest mean RMSE (332.49).
