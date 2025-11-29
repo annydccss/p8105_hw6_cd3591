@@ -190,5 +190,31 @@ na_table = birthweight %>%
 na_table
 ```
 
+```{r}
+# Propose a regression model for birthweight
+fit = lm(bwt ~ blength + bhead + gaweeks + 
+               babysex + smoken + delwt + wtgain + mheight,
+  data = birthweight)
+```
 
+Description of modeling process: I chose predictors based on subject-matter plausibility: gestational age and newborn size measures (length and head circumference) should strongly relate to birthweight, and maternal smoking and maternal size/weight variables may also affect fetal growth. I then checked a residuals-versus-fitted plot to see whether residuals are roughly centered around 0 with no severe pattern.
+
+```{r}
+# show a plot of model residuals against fitted values
+birthweight %>%
+  modelr::add_predictions(fit) %>%
+  modelr::add_residuals(fit) %>%
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point(alpha = 0.4) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_minimal() +
+  labs(x = "Fitted values", y = "Residuals",
+       title = "Residuals vs Fitted: Proposed birthweight model")
+```
+
+The residuals vs fitted plot shows a dense cloud of points centered around the horizontal zero line, especially for fitted birthweights in the roughly 2500–3800 g range. In this main region, the residuals look fairly symmetric around 0 with no strong curvature pattern, which suggests the linear mean structure is broadly reasonable for the majority of observations.
+
+However, the spread of residuals is not perfectly constant across the fitted values. There are several notable outliers, including some very large positive residuals at lower fitted values (meaning the model strongly under-predicts birthweight for a few cases), and some large negative residuals at higher fitted values (meaning the model over-predicts for a few cases). This indicates mild heteroscedasticity and the presence of influential or unusual observations.
+
+```{r}
 ```
