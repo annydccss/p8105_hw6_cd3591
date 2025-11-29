@@ -166,3 +166,29 @@ ci_table
 
 For R_squared, the confidence interval is (`r ci_table[1]`, `r ci_table[2]`). For b1/b2, the confidence interval is (`r ci_table[3]`, `r ci_table[4]`).
 
+# Problem 3
+```{r}
+# read the dataset
+birthweight_raw = read_csv("birthweight.csv")
+
+# clean the data
+birthweight = birthweight_raw %>%
+  janitor::clean_names() %>%   
+  mutate(
+    babysex = factor(babysex, levels = c(1, 2), labels = c("male", "female")),
+    malform = factor(malform, levels = c(0, 1), labels = c("absent", "present")),
+    frace = factor(frace),
+    mrace = factor(mrace)
+  )
+
+# check for the presence of missing data
+na_table = birthweight %>%
+  summarise(across(everything(), ~ sum(is.na(.x)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
+  arrange(desc(n_missing))
+
+na_table
+```
+
+
+```
